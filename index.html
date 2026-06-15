@@ -1,0 +1,1413 @@
+<!DOCTYPE html>
+<html lang="vi" class="h-full">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Chiến Binh Retro Neon - Synthwave Arcade</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Font Google (Inter & Press Start 2P cho phong cách Arcade) -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Press+Start+2P&family=Plus+Jakarta+Sans:wght@400;500;700&display=swap" rel="stylesheet">
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Tone.js for Web Audio Synth -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js"></script>
+    
+    <style>
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background-color: #05020c;
+            overflow: hidden;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+        .font-arcade {
+            font-family: 'Press Start 2P', cursive;
+        }
+        .font-neon {
+            font-family: 'Orbitron', sans-serif;
+        }
+        /* Neon glowing text and borders */
+        .neon-text-pink {
+            text-shadow: 0 0 5px rgba(236, 72, 153, 0.5), 0 0 10px rgba(236, 72, 153, 0.8), 0 0 20px rgba(236, 72, 153, 1);
+        }
+        .neon-text-cyan {
+            text-shadow: 0 0 5px rgba(6, 182, 212, 0.5), 0 0 10px rgba(6, 182, 212, 0.8), 0 0 20px rgba(6, 182, 212, 1);
+        }
+        .neon-border-pink {
+            box-shadow: 0 0 5px rgba(236, 72, 153, 0.5), inset 0 0 5px rgba(236, 72, 153, 0.5), 0 0 15px rgba(236, 72, 153, 0.7);
+            border-color: rgba(236, 72, 153, 1);
+        }
+        .neon-border-cyan {
+            box-shadow: 0 0 5px rgba(6, 182, 212, 0.5), inset 0 0 5px rgba(6, 182, 212, 0.5), 0 0 15px rgba(6, 182, 212, 0.7);
+            border-color: rgba(6, 182, 212, 1);
+        }
+        /* Custom scrollbar for leaderboard */
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: rgba(11, 9, 20, 0.5);
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #ec4899;
+            border-radius: 3px;
+        }
+        /* Scanline retro effect overlay */
+        .scanlines {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: linear-gradient(
+                rgba(18, 16, 16, 0) 50%, 
+                rgba(0, 0, 0, 0.25) 50%
+            ), linear-gradient(
+                90deg,
+                rgba(255, 0, 0, 0.06),
+                rgba(0, 255, 0, 0.02),
+                rgba(0, 0, 255, 0.06)
+            );
+            background-size: 100% 4px, 6px 100%;
+            z-index: 10;
+            pointer-events: none;
+        }
+        /* Animations */
+        @keyframes pulse-slow {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.8; transform: scale(1.02); }
+        }
+        .pulse-element {
+            animation: pulse-slow 3s infinite ease-in-out;
+        }
+    </style>
+</head>
+<body class="h-full flex items-center justify-center p-0 m-0 overflow-hidden select-none">
+
+    <!-- Retro CRT scanlines visual filter -->
+    <div class="scanlines"></div>
+
+    <!-- MAIN INTERFACE WRAPPER -->
+    <div class="relative w-full h-full max-w-6xl max-h-[850px] md:rounded-3xl overflow-hidden bg-[#0c051a] flex flex-col md:border-2 md:border-[#3b125c] md:shadow-[0_0_50px_rgba(59,18,92,0.4)]">
+        
+        <!-- GAME CANVAS CONTAINER -->
+        <div class="relative flex-grow w-full h-full overflow-hidden bg-black">
+            <!-- Game Canvas -->
+            <canvas id="gameCanvas" class="block w-full h-full"></canvas>
+
+            <!-- MENU SCREEN (OVERLAY) -->
+            <div id="mainMenu" class="absolute inset-0 flex flex-col items-center justify-center bg-black/85 z-20 transition-all duration-300">
+                <!-- Retro Grid Background for Menu -->
+                <div class="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(236,72,153,0.15),transparent_60%)] pointer-events-none"></div>
+                
+                <div class="text-center z-10 px-4 max-w-lg">
+                    <h1 class="font-neon text-4xl md:text-5xl font-black text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 via-purple-400 to-pink-500 tracking-wider mb-2 uppercase italic pulse-element">
+                        NEON CYBER DEFENDER
+                    </h1>
+                    <p class="font-neon text-xs md:text-sm text-cyan-400 font-bold uppercase tracking-widest mb-10">Chiến Binh Vũ Trụ Synthwave</p>
+                    
+                    <div class="space-y-4">
+                        <button onclick="startGame()" class="w-full py-4 px-8 font-neon font-black text-lg text-white bg-gradient-to-r from-pink-500 to-purple-600 rounded-xl neon-border-pink hover:from-pink-400 hover:to-purple-500 transition-all duration-200 hover:scale-105 active:scale-95 flex items-center justify-center gap-3">
+                            <i class="fa-solid fa-play"></i> BẮT ĐẦU CHƠI
+                        </button>
+                        
+                        <div class="grid grid-cols-2 gap-4">
+                            <button onclick="openMenu('instructions')" class="py-3 px-4 font-neon font-bold text-xs text-cyan-300 border border-cyan-500/50 bg-cyan-950/20 rounded-xl hover:bg-cyan-500/20 transition-all duration-150 flex items-center justify-center gap-2">
+                                <i class="fa-solid fa-gamepad"></i> CÁCH CHƠI
+                            </button>
+                            <button onclick="openMenu('leaderboard')" class="py-3 px-4 font-neon font-bold text-xs text-pink-300 border border-pink-500/50 bg-pink-950/20 rounded-xl hover:bg-pink-500/20 transition-all duration-150 flex items-center justify-center gap-2">
+                                <i class="fa-solid fa-trophy"></i> ĐIỂM CAO
+                            </button>
+                        </div>
+
+                        <!-- Audio Toggle Option -->
+                        <div class="pt-4 flex items-center justify-center">
+                            <button id="musicToggleBtn" onclick="toggleAudio()" class="py-2 px-5 rounded-full text-xs font-neon text-slate-400 bg-slate-900 border border-slate-700/60 hover:text-white transition-all flex items-center gap-2">
+                                <i id="musicIcon" class="fa-solid fa-volume-high text-pink-500"></i>
+                                <span id="musicText">NHẠC NỀN: BẬT</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="mt-12 text-slate-500 text-[10px] uppercase font-mono tracking-wider">
+                        Trò chơi arcade độc quyền phát triển bởi Gemini • 2026
+                    </div>
+                </div>
+            </div>
+
+            <!-- INSTRUCTIONS SCREEN -->
+            <div id="instructionsMenu" class="absolute inset-0 hidden flex-col items-center justify-center bg-black/90 z-25 p-6 overflow-y-auto">
+                <div class="w-full max-w-md bg-[#130d24] border border-cyan-500/30 rounded-2xl p-6 relative">
+                    <button onclick="closeMenus()" class="absolute top-4 right-4 text-slate-400 hover:text-pink-500 transition-all text-xl">
+                        <i class="fa-solid fa-xmark"></i>
+                    </button>
+                    <h2 class="font-neon text-xl font-bold text-cyan-400 border-b border-cyan-500/20 pb-3 mb-4 uppercase flex items-center gap-2">
+                        <i class="fa-solid fa-gamepad"></i> Hướng Dẫn Điều Khiển
+                    </h2>
+                    
+                    <div class="space-y-4 text-sm text-slate-300">
+                        <!-- Desktop controls -->
+                        <div class="p-3 bg-black/40 rounded-xl border border-slate-800">
+                            <span class="text-xs font-bold text-pink-400 uppercase font-neon block mb-2">Trên Máy Tính (PC)</span>
+                            <div class="grid grid-cols-2 gap-2 text-xs">
+                                <div class="flex items-center gap-2">
+                                    <kbd class="px-2 py-1 bg-slate-800 rounded text-white border border-slate-600 font-mono">← / →</kbd>
+                                    <span>Di chuyển Trái/Phải</span>
+                                </div>
+                                <div class="flex items-center gap-2">
+                                    <kbd class="px-2 py-1 bg-slate-800 rounded text-white border border-slate-600 font-mono">A / D</kbd>
+                                    <span>Di chuyển Trái/Phải</span>
+                                </div>
+                                <div class="col-span-2 flex items-center gap-2 mt-1">
+                                    <kbd class="px-4 py-1 bg-slate-800 rounded text-white border border-slate-600 font-mono">SPACEBAR</kbd>
+                                    <span>Bắn đạn liên hồi</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Mobile controls -->
+                        <div class="p-3 bg-black/40 rounded-xl border border-slate-800">
+                            <span class="text-xs font-bold text-cyan-400 uppercase font-neon block mb-2">Trên Điện Thoại / Máy Tính Bảng</span>
+                            <p class="text-xs leading-relaxed text-slate-400">
+                                Nhấn và giữ các phím ảo điều hướng <i class="fa-solid fa-caret-left"></i> <i class="fa-solid fa-caret-right"></i> xuất hiện dưới góc màn hình để di chuyển. Nhấn nút <i class="fa-solid fa-crosshairs"></i> để tự động hoặc bấm bắn tia laser.
+                            </p>
+                        </div>
+
+                        <!-- Items description -->
+                        <div class="p-3 bg-black/40 rounded-xl border border-slate-800">
+                            <span class="text-xs font-bold text-yellow-400 uppercase font-neon block mb-2">Vật Phẩm Hỗ Trợ (Power-ups)</span>
+                            <div class="space-y-2 text-xs">
+                                <div class="flex items-center gap-2">
+                                    <span class="w-5 h-5 rounded-full bg-cyan-500 flex items-center justify-center font-bold text-[10px] text-black">S</span>
+                                    <span><strong>Giáp Bảo Vệ:</strong> Kháng 1 lần va chạm</span>
+                                </div>
+                                <div class="flex items-center gap-2">
+                                    <span class="w-5 h-5 rounded-full bg-pink-500 flex items-center justify-center font-bold text-[10px] text-black">M</span>
+                                    <span><strong>Nâng Cấp Súng:</strong> Bắn tỏa nhiều tia cùng lúc</span>
+                                </div>
+                                <div class="flex items-center gap-2">
+                                    <span class="w-5 h-5 rounded-full bg-yellow-500 flex items-center justify-center font-bold text-[10px] text-black">F</span>
+                                    <span><strong>Ngưng Đọng:</strong> Làm chậm toàn bộ kẻ địch</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- LEADERBOARD SCREEN -->
+            <div id="leaderboardMenu" class="absolute inset-0 hidden flex-col items-center justify-center bg-black/90 z-25 p-6">
+                <div class="w-full max-w-md bg-[#130d24] border border-pink-500/30 rounded-2xl p-6 relative">
+                    <button onclick="closeMenus()" class="absolute top-4 right-4 text-slate-400 hover:text-pink-500 transition-all text-xl">
+                        <i class="fa-solid fa-xmark"></i>
+                    </button>
+                    <h2 class="font-neon text-xl font-bold text-pink-500 border-b border-pink-500/20 pb-3 mb-4 uppercase flex items-center gap-2">
+                        <i class="fa-solid fa-trophy"></i> Bảng Anh Hùng Vũ Trụ
+                    </h2>
+                    
+                    <div class="max-h-[250px] overflow-y-auto pr-2 space-y-2" id="leaderboardList">
+                        <!-- Items inserted dynamically -->
+                    </div>
+                    
+                    <button onclick="clearLeaderboard()" class="mt-4 text-[10px] font-neon text-red-400/70 hover:text-red-400 uppercase transition-colors tracking-widest block mx-auto">
+                        <i class="fa-solid fa-trash-can"></i> Xóa lịch sử điểm cao
+                    </button>
+                </div>
+            </div>
+
+            <!-- GAME OVER OVERLAY -->
+            <div id="gameOverScreen" class="absolute inset-0 hidden flex-col items-center justify-center bg-black/90 z-30 p-4">
+                <div class="text-center max-w-sm px-6 py-8 bg-[#110920] border-2 border-pink-500 rounded-2xl neon-border-pink">
+                    <h2 class="font-arcade text-2xl text-pink-500 mb-2 tracking-widest neon-text-pink animate-pulse">GAME OVER</h2>
+                    <p class="font-neon text-xs text-slate-400 uppercase tracking-widest mb-6">Chiến hạm của bạn đã bị phá hủy!</p>
+                    
+                    <div class="bg-black/40 rounded-xl p-4 mb-6 border border-slate-800 space-y-3">
+                        <div class="flex justify-between items-center text-sm">
+                            <span class="text-slate-400">Điểm Đạt Được:</span>
+                            <span id="finalScore" class="font-neon font-bold text-cyan-400 text-lg">0</span>
+                        </div>
+                        <div class="flex justify-between items-center text-sm">
+                            <span class="text-slate-400">Thời Gian Trụ:</span>
+                            <span id="finalTime" class="font-neon font-bold text-purple-400">0 giây</span>
+                        </div>
+                        <div class="flex justify-between items-center text-sm border-t border-slate-800/80 pt-2">
+                            <span class="text-slate-400 text-xs">Kỷ Lục Của Bạn:</span>
+                            <span id="recordScore" class="font-neon font-bold text-yellow-400">0</span>
+                        </div>
+                    </div>
+
+                    <!-- Record Name Form (only if score is high) -->
+                    <div id="nameInputContainer" class="mb-6 hidden">
+                        <p class="text-xs text-yellow-400 font-bold mb-2 uppercase tracking-wide">Bạn đã đạt kỷ lục mới!</p>
+                        <input type="text" id="playerNameInput" maxlength="10" placeholder="Nhập tên phi công..." class="w-full bg-slate-950 border border-pink-500/50 rounded-lg py-2 px-3 text-white text-center text-sm uppercase font-neon focus:outline-none focus:border-pink-500">
+                    </div>
+
+                    <div class="flex flex-col gap-3">
+                        <button onclick="saveAndRestart()" class="w-full py-3 bg-pink-500 hover:bg-pink-600 text-white font-neon font-black text-xs uppercase tracking-widest rounded-xl transition-all duration-150">
+                            Chơi Lại Ngay <i class="fa-solid fa-rotate-right ml-1"></i>
+                        </button>
+                        <button onclick="backToMenu()" class="w-full py-2 bg-slate-900 hover:bg-slate-800 text-slate-400 hover:text-white font-neon font-bold text-[10px] uppercase tracking-widest rounded-xl border border-slate-700/60 transition-all duration-150">
+                            Quay Về Trang Chủ
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- GAME STATS (TOP OVERLAY HUD) -->
+            <div id="gameHud" class="absolute top-0 left-0 right-0 p-4 flex justify-between items-start z-10 pointer-events-none opacity-0 transition-opacity duration-300">
+                <!-- Left stats -->
+                <div class="flex flex-col gap-1.5">
+                    <div class="flex items-center gap-2">
+                        <span class="text-[10px] font-neon font-bold text-pink-400 uppercase tracking-widest">HP:</span>
+                        <!-- Life Bars Grid -->
+                        <div id="lifeContainer" class="flex gap-1">
+                            <!-- Hearts generated in JS -->
+                        </div>
+                    </div>
+                    <!-- Shield bar -->
+                    <div id="shieldContainer" class="flex items-center gap-2 transition-all opacity-0">
+                        <span class="text-[10px] font-neon font-bold text-cyan-400 uppercase tracking-widest">GIÁP:</span>
+                        <div class="w-16 h-2 bg-slate-900 rounded-full border border-cyan-500/40 overflow-hidden">
+                            <div class="h-full bg-cyan-400 shadow-[0_0_5px_#22d3ee] w-full"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Center: Highscore Indicator -->
+                <div class="text-center">
+                    <div class="text-[9px] font-neon font-semibold text-slate-500 uppercase tracking-widest">ĐIỂM SỐ</div>
+                    <div id="hudScore" class="font-neon text-2xl font-black text-transparent bg-clip-text bg-gradient-to-r from-pink-400 via-purple-300 to-cyan-400 neon-text-pink">0</div>
+                </div>
+
+                <!-- Right stats -->
+                <div class="text-right flex flex-col items-end">
+                    <div class="text-[9px] font-neon font-semibold text-slate-500 uppercase tracking-widest">BẬT/TẮT NHẠC</div>
+                    <button id="hudAudioBtn" onclick="toggleAudio()" class="pointer-events-auto w-8 h-8 rounded-lg bg-black/40 border border-slate-800 hover:bg-black/70 flex items-center justify-center text-slate-400 transition-colors">
+                        <i id="hudAudioIcon" class="fa-solid fa-volume-high text-pink-500"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Active Power-up alert bar -->
+            <div id="powerupBar" class="absolute top-16 left-1/2 -translate-x-1/2 bg-black/80 border border-yellow-500/50 text-yellow-400 px-4 py-1.5 rounded-full text-xs font-neon font-bold uppercase tracking-wider hidden flex items-center gap-2 z-15">
+                <i class="fa-solid fa-bolt animate-bounce"></i> <span id="powerupText">ĐANG KÍCH HOẠT: BẮN TỎA</span>
+            </div>
+
+            <!-- VIRTUAL TOUCH CONTROLS (Floating for Mobile/Tablet) -->
+            <div id="mobileControls" class="absolute bottom-6 left-0 right-0 px-6 flex justify-between items-center z-15 pointer-events-none md:hidden">
+                <!-- Move controls (Left, Right) -->
+                <div class="flex gap-3 pointer-events-auto">
+                    <button id="btnLeft" class="w-16 h-16 rounded-2xl bg-slate-950/70 border border-cyan-500/40 active:bg-cyan-500/30 flex items-center justify-center text-cyan-400 text-3xl transition-all shadow-[0_0_15px_rgba(6,182,212,0.1)]">
+                        <i class="fa-solid fa-caret-left"></i>
+                    </button>
+                    <button id="btnRight" class="w-16 h-16 rounded-2xl bg-slate-950/70 border border-cyan-500/40 active:bg-cyan-500/30 flex items-center justify-center text-cyan-400 text-3xl transition-all shadow-[0_0_15px_rgba(6,182,212,0.1)]">
+                        <i class="fa-solid fa-caret-right"></i>
+                    </button>
+                </div>
+
+                <!-- Attack control (Shoot button) -->
+                <div class="pointer-events-auto">
+                    <button id="btnShoot" class="w-20 h-20 rounded-full bg-slate-950/70 border-2 border-pink-500/60 active:bg-pink-500/40 flex items-center justify-center text-pink-500 text-3xl transition-all shadow-[0_0_20px_rgba(236,72,153,0.15)] select-none">
+                        <i class="fa-solid fa-crosshairs animate-pulse"></i>
+                    </button>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- AUDIO SETUP & GAME JAVASCRIPT LOGIC -->
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // Game Configuration & State
+        const CONFIG = {
+            baseSpeed: 4,
+            maxLives: 3,
+            bossSpawnScore: 1200,
+        };
+
+        let gameState = {
+            isPlaying: false,
+            score: 0,
+            lives: CONFIG.maxLives,
+            timeElapsed: 0,
+            startTime: null,
+            highScores: [],
+            audioEnabled: true,
+            stars: [],
+            gridLines: [],
+            gridOffset: 0,
+            powerUpActive: null,
+            powerUpTimer: 0,
+            lastSpawnTime: 0,
+            lastShotTime: 0,
+            bossSpawned: false,
+            difficultyMultiplier: 1.0,
+        };
+
+        // Entities arrays
+        let player;
+        let bullets = [];
+        let enemies = [];
+        let particles = [];
+        let powerUps = [];
+        let shockwaves = [];
+
+        // Input monitoring
+        const keys = {
+            Left: false,
+            Right: false,
+            Shoot: false
+        };
+
+        // Mobile touch controls state
+        let touchLeft = false;
+        let touchRight = false;
+        let touchShoot = false;
+
+        // Synthesizer variables
+        let synthLead, synthBass, sfxSynth, noiseSynth;
+        let isAudioContextStarted = false;
+        let musicSeqLoop = null;
+
+        function initAudio() {
+            if (isAudioContextStarted) return;
+            
+            try {
+                // Main synth for electronic melodies
+                synthLead = new Tone.MonoSynth({
+                    oscillator: { type: "sawtooth" },
+                    envelope: { attack: 0.1, decay: 0.2, sustain: 0.5, release: 0.8 },
+                    filter: { Q: 2, type: "lowpass", frequency: 1200 }
+                }).toDestination();
+                synthLead.volume.value = -12;
+
+                // Heavy synth for retro bassline
+                synthBass = new Tone.MonoSynth({
+                    oscillator: { type: "triangle" },
+                    envelope: { attack: 0.05, decay: 0.3, sustain: 0.7, release: 0.3 },
+                    filter: { Q: 1, type: "lowpass", frequency: 400 }
+                }).toDestination();
+                synthBass.volume.value = -8;
+
+                // Fast FX synthesizer for shooting and lasers
+                sfxSynth = new Tone.PolySynth(Tone.Synth, {
+                    oscillator: { type: "square" },
+                    envelope: { attack: 0.01, decay: 0.1, sustain: 0, release: 0.1 }
+                }).toDestination();
+                sfxSynth.volume.value = -14;
+
+                // Noise gen for explosion sounds
+                noiseSynth = new Tone.NoiseSynth({
+                    noise: { type: "pink" },
+                    envelope: { attack: 0.01, decay: 0.4, sustain: 0 }
+                }).toDestination();
+                noiseSynth.volume.value = -10;
+
+                // Simple synthwave chord pattern loop
+                const bassNotes = ["C2", "C2", "Eb2", "Eb2", "G2", "G2", "F2", "F2"];
+                const leadNotes = ["C4", "G4", "F4", "Eb4", "G4", "Bb4", "C5", "G4"];
+                let noteIdx = 0;
+
+                musicSeqLoop = new Tone.Loop((time) => {
+                    if (!gameState.audioEnabled || !gameState.isPlaying) return;
+                    
+                    // Bass step
+                    synthBass.triggerAttackRelease(bassNotes[noteIdx % bassNotes.length], "8n", time);
+                    
+                    // Melody step occasionally
+                    if (noteIdx % 2 === 0) {
+                        synthLead.triggerAttackRelease(leadNotes[Math.floor(noteIdx / 2) % leadNotes.length], "4n", time);
+                    }
+                    
+                    noteIdx++;
+                }, "4n");
+
+                isAudioContextStarted = true;
+            } catch (e) {
+                console.warn("Audio Context Init Failed: ", e);
+            }
+        }
+
+        function playSound(type) {
+            if (!gameState.audioEnabled || !isAudioContextStarted) return;
+            try {
+                const now = Tone.now();
+                if (type === 'laser') {
+                    sfxSynth.triggerAttackRelease(["C5", "G4"], "16n", now);
+                } else if (type === 'laser_triple') {
+                    sfxSynth.triggerAttackRelease(["E5", "G5", "C6"], "16n", now);
+                } else if (type === 'hit') {
+                    sfxSynth.triggerAttackRelease("A3", "16n", now);
+                } else if (type === 'explosion') {
+                    noiseSynth.triggerAttack(now);
+                } else if (type === 'powerup') {
+                    sfxSynth.triggerAttackRelease(["C4", "E4", "G4", "C5"], "8n", now);
+                } else if (type === 'gameover') {
+                    synthLead.triggerAttackRelease("C3", "1n", now);
+                    synthBass.triggerAttackRelease("C1", "1n", now);
+                }
+            } catch(e){}
+        }
+
+        function startMusic() {
+            if (!isAudioContextStarted) initAudio();
+            Tone.start();
+            if (musicSeqLoop) {
+                musicSeqLoop.start(0);
+                Tone.Transport.start();
+            }
+        }
+
+        function stopMusic() {
+            if (musicSeqLoop) {
+                musicSeqLoop.stop();
+                Tone.Transport.stop();
+            }
+        }
+
+        class Player {
+            constructor() {
+                this.width = 44;
+                this.height = 40;
+                this.x = canvas.width / 2 - this.width / 2;
+                this.y = canvas.height - 100;
+                this.speed = 6.5;
+                this.shield = false;
+                this.color = '#38bdf8'; // Cyan
+            }
+
+            draw() {
+                ctx.save();
+                
+                // Drawing outer thruster trail glow
+                const thrusterHeight = 10 + Math.random() * 12;
+                const trailGrad = ctx.createLinearGradient(this.x + this.width/2, this.y + this.height, this.x + this.width/2, this.y + this.height + thrusterHeight);
+                trailGrad.addColorStop(0, '#f43f5e');
+                trailGrad.addColorStop(1, 'transparent');
+                ctx.fillStyle = trailGrad;
+                ctx.beginPath();
+                ctx.moveTo(this.x + 12, this.y + this.height - 5);
+                ctx.lineTo(this.x + this.width - 12, this.y + this.height - 5);
+                ctx.lineTo(this.x + this.width/2, this.y + this.height + thrusterHeight);
+                ctx.closePath();
+                ctx.fill();
+
+                // Draw neon shield circle if active
+                if (this.shield) {
+                    ctx.beginPath();
+                    ctx.arc(this.x + this.width / 2, this.y + this.height / 2, 38, 0, Math.PI * 2);
+                    ctx.strokeStyle = '#22d3ee';
+                    ctx.lineWidth = 2.5;
+                    ctx.shadowBlur = 12;
+                    ctx.shadowColor = '#06b6d4';
+                    ctx.stroke();
+                }
+
+                // Drawing futuristic triangular aircraft
+                ctx.shadowBlur = 10;
+                ctx.shadowColor = this.color;
+                ctx.fillStyle = this.color;
+                
+                ctx.beginPath();
+                // Nose
+                ctx.moveTo(this.x + this.width / 2, this.y);
+                // Right wing tip
+                ctx.lineTo(this.x + this.width, this.y + this.height);
+                // Inner wing indent
+                ctx.lineTo(this.x + this.width / 2, this.y + this.height - 8);
+                // Left wing tip
+                ctx.lineTo(this.x, this.y + this.height);
+                ctx.closePath();
+                ctx.fill();
+
+                // Detailed glass canopy (inside)
+                ctx.fillStyle = '#ffffff';
+                ctx.beginPath();
+                ctx.moveTo(this.x + this.width / 2, this.y + 10);
+                ctx.lineTo(this.x + this.width / 2 + 5, this.y + 24);
+                ctx.lineTo(this.x + this.width / 2 - 5, this.y + 24);
+                ctx.closePath();
+                ctx.fill();
+
+                ctx.restore();
+            }
+
+            move() {
+                let dx = 0;
+                if (keys.Left || touchLeft) dx = -this.speed;
+                if (keys.Right || touchRight) dx = this.speed;
+
+                this.x += dx;
+
+                // Screen boundaries restriction
+                if (this.x < 10) this.x = 10;
+                if (this.x > canvas.width - this.width - 10) {
+                    this.x = canvas.width - this.width - 10;
+                }
+            }
+        }
+
+        class Bullet {
+            constructor(x, y, angle = 0, speed = 10, isEnemy = false, color = '#ec4899') {
+                this.x = x;
+                this.y = y;
+                this.vx = Math.sin(angle) * speed;
+                this.vy = -Math.cos(angle) * speed;
+                this.radius = isEnemy ? 4.5 : 3;
+                this.isEnemy = isEnemy;
+                this.color = color;
+            }
+
+            update() {
+                this.x += this.vx;
+                this.y += this.vy;
+            }
+
+            draw() {
+                ctx.save();
+                ctx.shadowBlur = 8;
+                ctx.shadowColor = this.color;
+                ctx.fillStyle = this.color;
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.restore();
+            }
+        }
+
+        class Enemy {
+            constructor(type) {
+                this.type = type; // 'scout', 'fighter', 'boss'
+                this.width = type === 'boss' ? 120 : (type === 'fighter' ? 44 : 32);
+                this.height = type === 'boss' ? 80 : (type === 'fighter' ? 40 : 32);
+                this.x = Math.random() * (canvas.width - this.width - 40) + 20;
+                this.y = -this.height;
+                
+                // Specific stats based on type
+                if (type === 'boss') {
+                    this.hp = 35;
+                    this.maxHp = 35;
+                    this.speed = 1.0;
+                    this.color = '#e11d48'; // Bright red
+                    this.shootInterval = 1000;
+                } else if (type === 'fighter') {
+                    this.hp = 3;
+                    this.speed = 2.0;
+                    this.color = '#f59e0b'; // Amber yellow
+                    this.shootInterval = 1600;
+                } else { // scout
+                    this.hp = 1;
+                    this.speed = 3.2;
+                    this.color = '#a855f7'; // Purple
+                    this.shootInterval = 3000;
+                }
+
+                this.speed *= gameState.difficultyMultiplier;
+                this.lastShot = 0;
+                this.amplitude = Math.random() * 2 + 1; // Horizontal weaving movement
+                this.waveSpeed = Math.random() * 0.02 + 0.01;
+                this.angle = 0;
+            }
+
+            update() {
+                this.y += this.speed;
+                
+                // Weaving movement left-right
+                this.angle += this.waveSpeed;
+                this.x += Math.sin(this.angle) * this.amplitude;
+
+                // Restrict horizontal boundaries
+                if (this.x < 10) this.x = 10;
+                if (this.x > canvas.width - this.width - 10) this.x = canvas.width - this.width - 10;
+
+                // Handle Shooting logic
+                const now = Date.now();
+                if (now - this.lastShot > this.shootInterval) {
+                    this.shoot();
+                    this.lastShot = now;
+                }
+            }
+
+            shoot() {
+                if (this.y < 0) return; // Don't fire while spawning offscreen
+                
+                if (this.type === 'boss') {
+                    // Spread patterns
+                    bullets.push(new Bullet(this.x + this.width / 2, this.y + this.height, -0.3, 6, true, '#ef4444'));
+                    bullets.push(new Bullet(this.x + this.width / 2, this.y + this.height, 0, 6.5, true, '#ef4444'));
+                    bullets.push(new Bullet(this.x + this.width / 2, this.y + this.height, 0.3, 6, true, '#ef4444'));
+                } else if (this.type === 'fighter') {
+                    // Single aimed bullet downwards
+                    bullets.push(new Bullet(this.x + this.width / 2, this.y + this.height, 0, 5, true, '#f59e0b'));
+                } else {
+                    // Slow light shot
+                    bullets.push(new Bullet(this.x + this.width / 2, this.y + this.height, 0, 4, true, '#a855f7'));
+                }
+            }
+
+            draw() {
+                ctx.save();
+                ctx.shadowBlur = 10;
+                ctx.shadowColor = this.color;
+                ctx.fillStyle = this.color;
+
+                if (this.type === 'boss') {
+                    // Epic Boss Ship Model (Large Spaceship structure)
+                    ctx.beginPath();
+                    ctx.moveTo(this.x, this.y + 15);
+                    ctx.lineTo(this.x + this.width / 2, this.y + this.height);
+                    ctx.lineTo(this.x + this.width, this.y + 15);
+                    ctx.lineTo(this.x + this.width - 25, this.y);
+                    ctx.lineTo(this.x + 25, this.y);
+                    ctx.closePath();
+                    ctx.fill();
+
+                    // Boss HP bar background
+                    ctx.fillStyle = '#1e1b4b';
+                    ctx.fillRect(this.x, this.y - 12, this.width, 5);
+                    
+                    // Actual HP
+                    ctx.fillStyle = '#ef4444';
+                    const hpWidth = (this.hp / this.maxHp) * this.width;
+                    ctx.fillRect(this.x, this.y - 12, hpWidth, 5);
+                } else if (this.type === 'fighter') {
+                    // Mid-tier fighter shape (Hexagon ship)
+                    ctx.beginPath();
+                    ctx.moveTo(this.x + this.width/2, this.y + this.height);
+                    ctx.lineTo(this.x + this.width, this.y + this.height/3);
+                    ctx.lineTo(this.x + this.width - 8, this.y);
+                    ctx.lineTo(this.x + 8, this.y);
+                    ctx.lineTo(this.x, this.y + this.height/3);
+                    ctx.closePath();
+                    ctx.fill();
+                } else {
+                    // Fast scout shape (inverted diamond triangle)
+                    ctx.beginPath();
+                    ctx.moveTo(this.x + this.width/2, this.y + this.height);
+                    ctx.lineTo(this.x + this.width, this.y);
+                    ctx.lineTo(this.x, this.y);
+                    ctx.closePath();
+                    ctx.fill();
+                }
+
+                ctx.restore();
+            }
+        }
+
+        class PowerUp {
+            constructor(x, y) {
+                this.x = x;
+                this.y = y;
+                this.size = 20;
+                this.speed = 2.0;
+                
+                // Randomize Type: 'shield', 'multishot', 'freeze'
+                const rand = Math.random();
+                if (rand < 0.35) {
+                    this.type = 'shield';
+                    this.color = '#06b6d4'; // Cyan
+                    this.symbol = 'S';
+                } else if (rand < 0.70) {
+                    this.type = 'multishot';
+                    this.color = '#ec4899'; // Pink
+                    this.symbol = 'M';
+                } else {
+                    this.type = 'freeze';
+                    this.color = '#eab308'; // Gold yellow
+                    this.symbol = 'F';
+                }
+            }
+
+            update() {
+                this.y += this.speed;
+            }
+
+            draw() {
+                ctx.save();
+                ctx.shadowBlur = 8;
+                ctx.shadowColor = this.color;
+                
+                // Draw circle outer ring
+                ctx.strokeStyle = this.color;
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.size / 2, 0, Math.PI * 2);
+                ctx.stroke();
+
+                // Draw solid inner core
+                ctx.fillStyle = 'rgba(15, 23, 42, 0.8)';
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, (this.size / 2) - 1, 0, Math.PI * 2);
+                ctx.fill();
+
+                // Draw Glowing Letter Text
+                ctx.fillStyle = this.color;
+                ctx.font = 'bold 11px Orbitron';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText(this.symbol, this.x, this.y);
+
+                ctx.restore();
+            }
+        }
+
+        class Particle {
+            constructor(x, y, color) {
+                this.x = x;
+                this.y = y;
+                this.color = color;
+                this.radius = Math.random() * 2.5 + 1;
+                this.vx = (Math.random() - 0.5) * 6;
+                this.vy = (Math.random() - 0.5) * 6;
+                this.alpha = 1.0;
+                this.decay = Math.random() * 0.02 + 0.015;
+            }
+
+            update() {
+                this.x += this.vx;
+                this.y += this.vy;
+                this.alpha -= this.decay;
+            }
+
+            draw() {
+                ctx.save();
+                ctx.globalAlpha = this.alpha;
+                ctx.shadowBlur = 4;
+                ctx.shadowColor = this.color;
+                ctx.fillStyle = this.color;
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.restore();
+            }
+        }
+
+        // Starfield & Synthwave Neon Perspective Grid
+        function generateBackgroundElements() {
+            // Generate Stars
+            gameState.stars = [];
+            for (let i = 0; i < 60; i++) {
+                gameState.stars.push({
+                    x: Math.random() * canvas.width,
+                    y: Math.random() * canvas.height,
+                    size: Math.random() * 1.5 + 0.5,
+                    alpha: Math.random(),
+                    speed: Math.random() * 0.4 + 0.1
+                });
+            }
+        }
+
+        function drawBackground() {
+            // Dark blue cosmos wash background
+            ctx.fillStyle = '#05020c';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // Draw glowing space gradient nebula
+            const nebula = ctx.createRadialGradient(canvas.width / 2, canvas.height / 2, 50, canvas.width / 2, canvas.height / 2, canvas.width / 1.5);
+            nebula.addColorStop(0, 'rgba(59, 12, 92, 0.25)'); // Violet deep
+            nebula.addColorStop(0.5, 'rgba(11, 9, 20, 0)');
+            ctx.fillStyle = nebula;
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // Animate Starfield
+            ctx.fillStyle = '#ffffff';
+            gameState.stars.forEach(star => {
+                star.y += star.speed;
+                if (star.y > canvas.height) star.y = 0;
+                
+                // Soft sparkling
+                star.alpha += (Math.random() - 0.5) * 0.1;
+                if (star.alpha < 0.1) star.alpha = 0.1;
+                if (star.alpha > 1) star.alpha = 1;
+
+                ctx.save();
+                ctx.globalAlpha = star.alpha;
+                ctx.beginPath();
+                ctx.arc(star.x, star.y, star.size, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.restore();
+            });
+
+            // Draw Neon Grid Lines (Synthwave Perspective Grid)
+            drawPerspectiveGrid();
+        }
+
+        function drawPerspectiveGrid() {
+            const horizon = canvas.height * 0.45; // Grid ends near middle of screen
+            ctx.save();
+            ctx.strokeStyle = 'rgba(236, 72, 153, 0.22)'; // Pink-magenta neon line grid
+            ctx.lineWidth = 1;
+
+            // Generate Horizontal gridlines
+            gameState.gridOffset += 1.8;
+            if (gameState.gridOffset >= 40) {
+                gameState.gridOffset = 0;
+            }
+
+            for (let y = horizon; y < canvas.height; y += 40) {
+                const currentY = y + gameState.gridOffset;
+                // Fade out as grid lines reach horizon
+                const distanceRatio = (currentY - horizon) / (canvas.height - horizon);
+                ctx.strokeStyle = `rgba(236, 72, 153, ${0.3 * distanceRatio})`;
+                ctx.beginPath();
+                ctx.moveTo(0, currentY);
+                ctx.lineTo(canvas.width, currentY);
+                ctx.stroke();
+            }
+
+            // Vertical perspective gridlines fanning out from center
+            const numVerts = 18;
+            const vanishingPointX = canvas.width / 2;
+            for (let i = -numVerts / 2; i <= numVerts / 2; i++) {
+                const bottomX = (canvas.width / 2) + (i * (canvas.width / 5));
+                ctx.strokeStyle = 'rgba(236, 72, 153, 0.15)';
+                ctx.beginPath();
+                ctx.moveTo(vanishingPointX, horizon);
+                ctx.lineTo(bottomX, canvas.height);
+                ctx.stroke();
+            }
+
+            ctx.restore();
+        }
+
+        function setupEventListeners() {
+            // Desktop keyboard setup
+            window.addEventListener('keydown', (e) => {
+                if (e.code === 'ArrowLeft' || e.code === 'KeyA') keys.Left = true;
+                if (e.code === 'ArrowRight' || e.code === 'KeyD') keys.Right = true;
+                if (e.code === 'Space') keys.Shoot = true;
+            });
+
+            window.addEventListener('keyup', (e) => {
+                if (e.code === 'ArrowLeft' || e.code === 'KeyA') keys.Left = false;
+                if (e.code === 'ArrowRight' || e.code === 'KeyD') keys.Right = false;
+                if (e.code === 'Space') keys.Shoot = false;
+            });
+
+            // Prevent default zooming actions on mobile
+            document.addEventListener('gesturestart', function (e) {
+                e.preventDefault();
+            });
+
+            // Mobile virtual buttons setup
+            const touchBtnLeft = document.getElementById('btnLeft');
+            const touchBtnRight = document.getElementById('btnRight');
+            const touchBtnShoot = document.getElementById('btnShoot');
+
+            // Hook touch events helper
+            function mapTouch(elem, downCallback, upCallback) {
+                elem.addEventListener('touchstart', (e) => {
+                    e.preventDefault();
+                    downCallback();
+                });
+                elem.addEventListener('touchend', (e) => {
+                    e.preventDefault();
+                    upCallback();
+                });
+                elem.addEventListener('touchcancel', (e) => {
+                    e.preventDefault();
+                    upCallback();
+                });
+            }
+
+            mapTouch(touchBtnLeft, () => { touchLeft = true; }, () => { touchLeft = false; });
+            mapTouch(touchBtnRight, () => { touchRight = true; }, () => { touchRight = false; });
+            mapTouch(touchBtnShoot, () => { touchShoot = true; }, () => { touchShoot = false; });
+
+            // Automatically resize Canvas
+            window.addEventListener('resize', resizeCanvas);
+            resizeCanvas();
+        }
+
+        function resizeCanvas() {
+            // Adapt canvas boundaries
+            const container = canvas.parentElement;
+            canvas.width = container.clientWidth;
+            canvas.height = container.clientHeight;
+            
+            // Adjust Player position dynamic sizing
+            if (player) {
+                player.y = canvas.height - 100;
+                if (player.x > canvas.width) {
+                    player.x = canvas.width - player.width - 10;
+                }
+            }
+            generateBackgroundElements();
+        }
+
+        function openMenu(menuType) {
+            document.getElementById('mainMenu').classList.add('hidden');
+            if (menuType === 'instructions') {
+                document.getElementById('instructionsMenu').classList.remove('hidden');
+                document.getElementById('instructionsMenu').classList.add('flex');
+            } else if (menuType === 'leaderboard') {
+                document.getElementById('leaderboardMenu').classList.remove('hidden');
+                document.getElementById('leaderboardMenu').classList.add('flex');
+                renderLeaderboard();
+            }
+        }
+
+        function closeMenus() {
+            document.getElementById('instructionsMenu').classList.add('hidden');
+            document.getElementById('leaderboardMenu').classList.add('hidden');
+            document.getElementById('mainMenu').classList.remove('hidden');
+        }
+
+        function updateHUD() {
+            // Update Lives container
+            const container = document.getElementById('lifeContainer');
+            container.innerHTML = '';
+            for (let i = 0; i < CONFIG.maxLives; i++) {
+                const heart = document.createElement('i');
+                heart.className = `fa-solid fa-heart transition-all text-xs duration-200 ${i < gameState.lives ? 'text-pink-500 neon-text-pink scale-100' : 'text-slate-800 scale-75'}`;
+                container.appendChild(heart);
+            }
+
+            // Update Score indicator
+            document.getElementById('hudScore').innerText = gameState.score;
+        }
+
+        function toggleAudio() {
+            gameState.audioEnabled = !gameState.audioEnabled;
+            
+            const musicIcon = document.getElementById('musicIcon');
+            const musicText = document.getElementById('musicText');
+            const hudAudioIcon = document.getElementById('hudAudioIcon');
+
+            if (gameState.audioEnabled) {
+                musicIcon.className = "fa-solid fa-volume-high text-pink-500";
+                musicText.innerText = "NHẠC NỀN: BẬT";
+                hudAudioIcon.className = "fa-solid fa-volume-high text-pink-500";
+                startMusic();
+            } else {
+                musicIcon.className = "fa-solid fa-volume-xmark text-slate-500";
+                musicText.innerText = "NHẠC NỀN: TẮT";
+                hudAudioIcon.className = "fa-solid fa-volume-xmark text-slate-500";
+                stopMusic();
+            }
+        }
+
+        function createExplosion(x, y, color) {
+            playSound('explosion');
+            for (let i = 0; i < 18; i++) {
+                particles.push(new Particle(x, y, color));
+            }
+        }
+
+        function handleSpawning() {
+            const now = Date.now();
+            let spawnDelay = Math.max(1200 - (gameState.score * 0.35), 450); // Get progressively faster
+            
+            if (now - gameState.lastSpawnTime > spawnDelay) {
+                // Determine whether a Boss should spawn (only one boss alive at once)
+                const activeBoss = enemies.some(e => e.type === 'boss');
+                
+                if (gameState.score >= CONFIG.bossSpawnScore && !gameState.bossSpawned && !activeBoss) {
+                    enemies.push(new Enemy('boss'));
+                    gameState.bossSpawned = true;
+                } else if (!activeBoss) {
+                    // Spawn normal enemies based on weights
+                    const rand = Math.random();
+                    if (rand < 0.35) {
+                        enemies.push(new Enemy('fighter'));
+                    } else {
+                        enemies.push(new Enemy('scout'));
+                    }
+                }
+                gameState.lastSpawnTime = now;
+            }
+        }
+
+        function handlePlayerShooting() {
+            const now = Date.now();
+            let shootCooldown = 180; // Rapid firing rate
+
+            if ((keys.Shoot || touchShoot) && now - gameState.lastShotTime > shootCooldown) {
+                if (gameState.powerUpActive === 'multishot') {
+                    // Spread Triple Shot
+                    bullets.push(new Bullet(player.x + player.width / 2, player.y, -0.22, 11, false, '#38bdf8'));
+                    bullets.push(new Bullet(player.x + player.width / 2, player.y, 0, 11.5, false, '#ec4899'));
+                    bullets.push(new Bullet(player.x + player.width / 2, player.y, 0.22, 11, false, '#38bdf8'));
+                    playSound('laser_triple');
+                } else {
+                    // Classic Single Shot
+                    bullets.push(new Bullet(player.x + player.width / 2, player.y, 0, 11.5, false, '#38bdf8'));
+                    playSound('laser');
+                }
+                gameState.lastShotTime = now;
+            }
+        }
+
+        function checkCollisions() {
+            // Check Player Laser hits Enemy
+            bullets.forEach((bullet, bIdx) => {
+                if (bullet.isEnemy) return;
+
+                enemies.forEach((enemy, eIdx) => {
+                    const hit = bullet.x >= enemy.x && 
+                                bullet.x <= enemy.x + enemy.width && 
+                                bullet.y >= enemy.y && 
+                                bullet.y <= enemy.y + enemy.height;
+
+                    if (hit) {
+                        // Create damage sparks
+                        createExplosion(bullet.x, bullet.y, enemy.color);
+                        bullets.splice(bIdx, 1);
+                        playSound('hit');
+
+                        enemy.hp -= 1;
+                        if (enemy.hp <= 0) {
+                            // Splendid big explosion
+                            createExplosion(enemy.x + enemy.width/2, enemy.y + enemy.height/2, enemy.color);
+                            
+                            // Score calculation
+                            let pointsGained = enemy.type === 'boss' ? 500 : (enemy.type === 'fighter' ? 100 : 50);
+                            gameState.score += pointsGained;
+
+                            // Dropping Power-ups chance
+                            if (Math.random() < 0.22) {
+                                powerUps.push(new PowerUp(enemy.x + enemy.width/2, enemy.y + enemy.height/2));
+                            }
+
+                            // If boss died, allow another boss to spawn eventually
+                            if (enemy.type === 'boss') {
+                                gameState.bossSpawned = false;
+                                CONFIG.bossSpawnScore += 1500; // Next boss requires higher score threshold
+                            }
+
+                            enemies.splice(eIdx, 1);
+                        }
+                    }
+                });
+            });
+
+            // Check Enemy Laser OR Ship body hits Player
+            bullets.forEach((bullet, bIdx) => {
+                if (!bullet.isEnemy) return;
+
+                const hitPlayer = bullet.x >= player.x && 
+                                  bullet.x <= player.x + player.width && 
+                                  bullet.y >= player.y && 
+                                  bullet.y <= player.y + player.height;
+
+                if (hitPlayer) {
+                    bullets.splice(bIdx, 1);
+                    damagePlayer();
+                }
+            });
+
+            enemies.forEach((enemy, eIdx) => {
+                const crash = enemy.x + enemy.width >= player.x && 
+                              enemy.x <= player.x + player.width && 
+                              enemy.y + enemy.height >= player.y && 
+                              enemy.y <= player.y + player.height;
+
+                if (crash) {
+                    enemies.splice(eIdx, 1);
+                    createExplosion(enemy.x + enemy.width/2, enemy.y + enemy.height/2, enemy.color);
+                    damagePlayer();
+                }
+            });
+
+            // Check Player grabbing PowerUps
+            powerUps.forEach((item, idx) => {
+                const picked = item.x >= player.x && 
+                               item.x <= player.x + player.width && 
+                               item.y >= player.y && 
+                               item.y <= player.y + player.height;
+
+                if (picked) {
+                    playSound('powerup');
+                    activatePowerup(item.type);
+                    powerUps.splice(idx, 1);
+                }
+            });
+        }
+
+        function damagePlayer() {
+            if (player.shield) {
+                player.shield = false;
+                document.getElementById('shieldContainer').classList.add('opacity-0');
+                playSound('hit');
+                return;
+            }
+
+            gameState.lives -= 1;
+            updateHUD();
+            playSound('hit');
+
+            if (gameState.lives <= 0) {
+                triggerGameOver();
+            } else {
+                // Short screen flashing screen shake effect
+                ctx.fillStyle = 'rgba(239, 68, 68, 0.4)';
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+            }
+        }
+
+        function activatePowerup(type) {
+            gameState.powerUpActive = type;
+            gameState.powerUpTimer = 350; // Active for roughly 6 seconds
+            
+            const bar = document.getElementById('powerupBar');
+            const text = document.getElementById('powerupText');
+            bar.classList.remove('hidden');
+
+            if (type === 'shield') {
+                player.shield = true;
+                text.innerText = "Giáp Hộ Vệ: Đang Kích Hoạt";
+                document.getElementById('shieldContainer').classList.remove('opacity-0');
+            } else if (type === 'multishot') {
+                text.innerText = "Tia Laser Kép/Ba: Tối Đa Sát Thương";
+            } else if (type === 'freeze') {
+                text.innerText = "Thời Không Ngưng Đọng: Địch Làm Chậm";
+            }
+        }
+
+        function gameLoop() {
+            if (!gameState.isPlaying) return;
+
+            // Step 1: Background rendering
+            drawBackground();
+
+            // Step 2: Handle Difficulty Ramp
+            gameState.timeElapsed = Math.floor((Date.now() - gameState.startTime) / 1000);
+            gameState.difficultyMultiplier = 1.0 + (gameState.timeElapsed * 0.008);
+
+            // Step 3: Handle spawning and inputs
+            handleSpawning();
+            handlePlayerShooting();
+
+            // Step 4: Update Player Physics
+            player.move();
+            player.draw();
+
+            // Step 5: Power-up timers decay
+            if (gameState.powerUpActive) {
+                gameState.powerUpTimer--;
+                if (gameState.powerUpTimer <= 0) {
+                    gameState.powerUpActive = null;
+                    player.shield = false;
+                    document.getElementById('shieldContainer').classList.add('opacity-0');
+                    document.getElementById('powerupBar').classList.add('hidden');
+                }
+            }
+
+            // Step 6: Update Bullets
+            bullets.forEach((bullet, idx) => {
+                bullet.update();
+                bullet.draw();
+
+                // Cleanup out of bounds
+                if (bullet.y < 0 || bullet.y > canvas.height) {
+                    bullets.splice(idx, 1);
+                }
+            });
+
+            // Step 7: Update Enemies
+            enemies.forEach((enemy, idx) => {
+                if (gameState.powerUpActive === 'freeze') {
+                    // Freeze action reduces enemy velocity by 75%
+                    enemy.y += enemy.speed * 0.25;
+                } else {
+                    enemy.update();
+                }
+                enemy.draw();
+
+                // Cleanup when pass screen bottom
+                if (enemy.y > canvas.height) {
+                    enemies.splice(idx, 1);
+                    // Penalize score slightly for letting enemies slip
+                    gameState.score = Math.max(0, gameState.score - 10);
+                }
+            });
+
+            // Step 8: Update Particles
+            particles.forEach((particle, idx) => {
+                particle.update();
+                particle.draw();
+                if (particle.alpha <= 0) {
+                    particles.splice(idx, 1);
+                }
+            });
+
+            // Step 9: Update Floating Power-ups
+            powerUps.forEach((item, idx) => {
+                item.update();
+                item.draw();
+                if (item.y > canvas.height) {
+                    powerUps.splice(idx, 1);
+                }
+            });
+
+            // Step 10: Check damage and collisions
+            checkCollisions();
+            updateHUD();
+
+            requestAnimationFrame(gameLoop);
+        }
+
+        function startGame() {
+            // Unveil user interfaces
+            document.getElementById('mainMenu').classList.add('hidden');
+            document.getElementById('gameHud').classList.remove('opacity-0');
+            document.getElementById('gameHud').classList.add('opacity-100');
+
+            // Reset engine parameters
+            gameState.isPlaying = true;
+            gameState.score = 0;
+            gameState.lives = CONFIG.maxLives;
+            gameState.startTime = Date.now();
+            gameState.powerUpActive = null;
+            gameState.bossSpawned = false;
+            CONFIG.bossSpawnScore = 1200;
+
+            bullets = [];
+            enemies = [];
+            particles = [];
+            powerUps = [];
+
+            player = new Player();
+            updateHUD();
+
+            // Trigger synthwave audio engine
+            if (gameState.audioEnabled) {
+                startMusic();
+            }
+
+            // Bootstrap Loop sequence
+            requestAnimationFrame(gameLoop);
+        }
+
+        function triggerGameOver() {
+            gameState.isPlaying = false;
+            stopMusic();
+            playSound('gameover');
+
+            // Render stats into Game Over Overlay
+            document.getElementById('finalScore').innerText = gameState.score;
+            document.getElementById('finalTime').innerText = gameState.timeElapsed + " giây";
+            
+            // Leaderboard check logic
+            const minRecordScore = getMinRecordScore();
+            if (gameState.score > minRecordScore || gameState.highScores.length < 5) {
+                document.getElementById('nameInputContainer').classList.remove('hidden');
+            } else {
+                document.getElementById('nameInputContainer').classList.add('hidden');
+            }
+
+            document.getElementById('recordScore').innerText = getHighScore();
+            
+            // Pop out overlay Modal
+            document.getElementById('gameOverScreen').classList.remove('hidden');
+            document.getElementById('gameOverScreen').classList.add('flex');
+        }
+
+        function saveAndRestart() {
+            const inputField = document.getElementById('playerNameInput');
+            const name = inputField.value.trim().toUpperCase() || 'PHI CÔNG';
+            
+            // Save if valid
+            if (!document.getElementById('nameInputContainer').classList.contains('hidden')) {
+                saveScoreToLeaderboard(name, gameState.score);
+                inputField.value = '';
+            }
+
+            document.getElementById('gameOverScreen').classList.add('hidden');
+            startGame();
+        }
+
+        function backToMenu() {
+            // Save current record if any before returning
+            const inputField = document.getElementById('playerNameInput');
+            const name = inputField.value.trim().toUpperCase() || 'PHI CÔNG';
+            if (!document.getElementById('nameInputContainer').classList.contains('hidden')) {
+                saveScoreToLeaderboard(name, gameState.score);
+                inputField.value = '';
+            }
+
+            document.getElementById('gameOverScreen').classList.add('hidden');
+            document.getElementById('gameHud').classList.add('opacity-0');
+            document.getElementById('mainMenu').classList.remove('hidden');
+        }
+
+        function loadHighScores() {
+            const stored = localStorage.getItem('cyber_defender_scores');
+            if (stored) {
+                gameState.highScores = JSON.parse(stored);
+            } else {
+                // Default placeholder highscores
+                gameState.highScores = [
+                    { name: "NEO", score: 3500 },
+                    { name: "TRON", score: 2400 },
+                    { name: "RIDER", score: 1800 }
+                ];
+                saveToLocalStorage();
+            }
+        }
+
+        function getHighScore() {
+            if (gameState.highScores.length === 0) return 0;
+            return gameState.highScores[0].score;
+        }
+
+        function getMinRecordScore() {
+            if (gameState.highScores.length < 5) return 0;
+            return gameState.highScores[gameState.highScores.length - 1].score;
+        }
+
+        function saveScoreToLeaderboard(name, score) {
+            gameState.highScores.push({ name, score });
+            // Sort Descending
+            gameState.highScores.sort((a, b) => b.score - a.score);
+            // Limit to Top 5 items
+            if (gameState.highScores.length > 5) {
+                gameState.highScores.splice(5);
+            }
+            saveToLocalStorage();
+        }
+
+        function saveToLocalStorage() {
+            localStorage.setItem('cyber_defender_scores', JSON.stringify(gameState.highScores));
+        }
+
+        function clearLeaderboard() {
+            gameState.highScores = [];
+            saveToLocalStorage();
+            renderLeaderboard();
+        }
+
+        function renderLeaderboard() {
+            const list = document.getElementById('leaderboardList');
+            list.innerHTML = '';
+
+            if (gameState.highScores.length === 0) {
+                list.innerHTML = `<div class="text-center py-6 text-xs text-slate-500 font-neon">Chưa có kỷ lục nào được ghi nhận.</div>`;
+                return;
+            }
+
+            gameState.highScores.forEach((item, index) => {
+                const medalColor = index === 0 ? 'text-yellow-400' : (index === 1 ? 'text-slate-300' : (index === 2 ? 'text-amber-600' : 'text-slate-500'));
+                const element = document.createElement('div');
+                element.className = "flex justify-between items-center p-2.5 bg-black/40 rounded-xl border border-slate-800/80 text-sm font-neon";
+                element.innerHTML = `
+                    <div class="flex items-center gap-3">
+                        <span class="${medalColor} font-bold font-arcade text-xs w-6">${index + 1}</span>
+                        <span class="text-white font-black tracking-wider">${item.name}</span>
+                    </div>
+                    <span class="text-pink-500 font-bold">${item.score} <span class="text-[9px] text-slate-500">PTS</span></span>
+                `;
+                list.appendChild(element);
+            });
+        }
+
+        window.onload = function() {
+            loadHighScores();
+            setupEventListeners();
+        };
+    </script>
+</body>
+</html>
